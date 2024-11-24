@@ -10,7 +10,45 @@ import android.net.wifi.WifiManager
 import android.os.Build
 import androidx.annotation.RequiresApi
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
 
+@ExperimentalCoroutinesApi
+fun Context.observeConnectivity(): Flow<String> = callbackFlow {
+    val connectivityManager = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+    
+    val networkRequest =
+        NetworkRequest.Builder().addTransportType(NetworkCapabilities.TRANSPORT_WIFI).build()
+    
+    val callback = object : ConnectivityManager.NetworkCallback() {
+        override fun onCapabilitiesChanged(
+            network: Network,
+            networkCapabilities: NetworkCapabilities
+        ) {
+            super.onCapabilitiesChanged(network, networkCapabilities)
+            val connectionType = when {
+                networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> "WiFi"
+                networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> "Mobile Data"
+                else -> "No Connection"
+            }
+            trySend(connectionType).isSuccess
+        }
+        
+        override fun onLost(network: Network) {
+            super.onLost(network)
+            trySend("No Connection").isSuccess
+        }
+    }
+    
+    connectivityManager.registerNetworkCallback(networkRequest, callback)
+    
+    awaitClose {
+        connectivityManager.unregisterNetworkCallback(callback)
+    }
+    
+}
 
 fun getConnectionType(context: Context): String {
     val connectivityManager =
