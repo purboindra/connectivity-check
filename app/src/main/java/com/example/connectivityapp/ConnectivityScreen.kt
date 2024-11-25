@@ -13,10 +13,13 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.hilt.navigation.compose.hiltViewModel
 import kotlinx.coroutines.launch
 
 @Composable
-fun ConnectivityScreen(modifier: Modifier) {
+fun ConnectivityScreen(
+    modifier: Modifier, connectivityViewModel: ConnectivityViewModel = hiltViewModel()
+) {
     
     val context = LocalContext.current
     
